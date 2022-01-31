@@ -124,7 +124,6 @@ class Resque_Redis
 			}
 			else {
 				list($host, $port, $dsnDatabase, $user, $password, $options) = self::parseDsn($server);
-				// $user is not used, only $password
 
 				// Look for known Credis_Client options
 				$timeout = isset($options['timeout']) ? intval($options['timeout']) : null;
@@ -133,8 +132,9 @@ class Resque_Redis
 
 				$this->driver = new Credis_Client($host, $port, $timeout, $persistent);
 				$this->driver->setMaxConnectRetries($maxRetries);
-				if ($password){
-					$this->driver->auth($password);
+				if ($password) {
+                    $auth = ($user) ? [$user, $password] : $password;
+                    $this->driver->auth($auth);
 				}
 
 				// If we have found a database in our DSN, use it instead of the `$database`
@@ -186,10 +186,15 @@ class Resque_Redis
 		$parts = parse_url($dsn);
 
 		// Check the URI scheme
-		$validSchemes = array('redis', 'tcp');
+		$validSchemes = array('redis', 'tcp', 'tls');
 		if (isset($parts['scheme']) && ! in_array($parts['scheme'], $validSchemes)) {
 			throw new \InvalidArgumentException("Invalid DSN. Supported schemes are " . implode(', ', $validSchemes));
 		}
+
+        // Include scheme with host for TLS connections
+        if (isset($parts['scheme']) && $parts['scheme'] === 'tls') {
+            $parts['host'] = 'tls://' . $parts['host'];
+        }
 
 		// Allow simple 'hostname' format, which `parse_url` treats as a path, not host.
 		if ( ! isset($parts['host']) && isset($parts['path'])) {
