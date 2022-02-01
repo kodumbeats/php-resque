@@ -130,11 +130,10 @@ class Resque_Redis
 				$persistent = isset($options['persistent']) ? $options['persistent'] : '';
 				$maxRetries = isset($options['max_connect_retries']) ? $options['max_connect_retries'] : 0;
 
-				$this->driver = new Credis_Client($host, $port, $timeout, $persistent);
+				$this->driver = new Credis_Client($host, $port, $timeout, $persistent, 0, $password, $user);
 				$this->driver->setMaxConnectRetries($maxRetries);
 				if ($password) {
-                    $auth = ($user) ? [$user, $password] : $password;
-                    $this->driver->auth($auth);
+                    $this->driver->auth($password, $user);
 				}
 
 				// If we have found a database in our DSN, use it instead of the `$database`
